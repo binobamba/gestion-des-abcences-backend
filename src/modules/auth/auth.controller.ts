@@ -12,7 +12,7 @@ export class AuthController {
   constructor(private readonly authService: AuthService) {}
 
   @Post('login')
-  @Public()
+  // @Public()
   @ApiOperation({ summary: 'Connexion utilisateur' })
   @ApiResponse({ status: 200, description: 'Connexion réussie' })
   @ApiResponse({ status: 401, description: 'Identifiants invalides' })
@@ -21,7 +21,7 @@ export class AuthController {
   }
 
   @Post('register')
-  @Public()
+  // @Public()
   @ApiOperation({ summary: 'Inscription utilisateur' })
   @ApiResponse({ status: 200, description: 'Utilisateur inscrit avec succès' })
   @ApiResponse({ status: 409, description: 'Email déjà existant' })
@@ -31,7 +31,7 @@ export class AuthController {
 
   @Get('me')
   @UseGuards(JwtAuthGuard)
-  @ApiBearerAuth()
+  // @ApiBearerAuth()
   @ApiOperation({ summary: 'Obtenir le profil utilisateur actuel' })
   @ApiResponse({ status: 200, description: 'Profil utilisateur récupéré' })
   @ApiResponse({ status: 401, description: 'Non autorisé' })

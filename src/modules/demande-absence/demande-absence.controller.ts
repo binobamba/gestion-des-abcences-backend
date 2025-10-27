@@ -14,8 +14,8 @@ import { User } from 'src/modules/users/entities/user.entity';
 export class DemandeAbsenceController {
   constructor(private readonly demandeAbsenceService: DemandeAbsenceService) {}
 
-  @UseGuards(JwtAuthGuard)
-  @ApiBearerAuth()
+  // @UseGuards(JwtAuthGuard)
+  // @ApiBearerAuth()
   @ApiOperation({ summary: "Créer une nouvelle demande d'absence" })
   @ApiResponse({ status: 201, description: 'Demande créée avec succès', type: DemandeAbsence })
   @Post()
@@ -24,8 +24,8 @@ export class DemandeAbsenceController {
     return this.demandeAbsenceService.create(createDto, user);
   }
 
-  @UseGuards(JwtAuthGuard)
-  @ApiBearerAuth()
+  // @UseGuards(JwtAuthGuard)
+  // @ApiBearerAuth()
   @ApiOperation({ summary: 'Récupérer toutes les demandes d’absence' })
   @ApiResponse({ status: 200, description: 'Liste des demandes', type: [DemandeAbsence] })
   @Get()
