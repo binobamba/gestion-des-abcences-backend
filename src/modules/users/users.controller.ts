@@ -15,6 +15,8 @@ import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
 import { JwtAuthGuard } from '../../common/jwt-auth.guard';
 import { Public } from '../../common/public.decorator';
+import { User } from './entities/user.entity';
+import { StatistiquesDTO } from './dto/statistique.dto';
 
 @ApiTags('users')
 @Controller('users')
@@ -22,9 +24,7 @@ import { Public } from '../../common/public.decorator';
 @ApiBearerAuth()
 export class UsersController {
   constructor(private readonly usersService: UsersService) {}
-
   @Post()
-  @Public()
   @ApiOperation({ summary: 'Créer un nouvel utilisateur' })
   @ApiResponse({ status: 201, description: 'Utilisateur créé avec succès' })
   @ApiResponse({ status: 409, description: 'Email déjà utilisé' })
@@ -46,16 +46,16 @@ export class UsersController {
     return this.usersService.searchUsers(query);
   }
 
-  @Get('stats')
+  @Get('statistiques')
   @ApiOperation({ summary: 'Obtenir les statistiques des utilisateurs' })
-  @ApiResponse({ status: 200, description: 'Statistiques' })
+  @ApiResponse({ status: 200, description: 'Statistiques',type:StatistiquesDTO })
   getStats() {
     return this.usersService.getUserStats();
   }
 
   @Get(':id')
   @ApiOperation({ summary: 'Obtenir un utilisateur par ID' })
-  @ApiResponse({ status: 200, description: 'Utilisateur trouvé' })
+  @ApiResponse({ status: 200, description: 'Utilisateur trouvé' ,type:User})
   @ApiResponse({ status: 404, description: 'Utilisateur non trouvé' })
   findOne(@Param('id') id: string) {
     return this.usersService.findOne(+id);

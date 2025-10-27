@@ -14,6 +14,14 @@ export enum Genre {
   AUTRE = 'autre',
 }
 
+export enum Role{
+  EMPLOYE = 'employee',
+  MANAGER = 'manager',
+  RH = 'RH',
+  DIRECTION  = 'direction',
+
+}
+
 @Entity('users')
 export class User {
   @ApiProperty({ description: 'ID unique de l\'utilisateur' })
@@ -44,6 +52,18 @@ export class User {
   @ApiProperty({ example: 'Paris, France', description: 'Lieu de naissance' })
   @Column()
   lieuDeNaissance: string;
+
+    @ApiProperty({ 
+    enum:Role,
+    example: Role.EMPLOYE, 
+    description: 'role de l\'utilisateur' 
+  })
+  @Column({ 
+    type: 'enum', 
+    enum: Role, 
+    default: Role. EMPLOYE
+  })
+  role: Role;
 
   @ApiProperty({ 
     enum: Genre, 

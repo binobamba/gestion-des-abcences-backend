@@ -1,4 +1,4 @@
-import { Controller, Post, Body, Get, UseGuards, Request } from '@nestjs/common';
+import { Controller, Post, Body, Get, UseGuards, Request, Param } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth } from '@nestjs/swagger';
 import { AuthService } from './auth.service';
 import { LoginDto } from './dto/login.dto';
@@ -23,7 +23,7 @@ export class AuthController {
   @Post('register')
   @Public()
   @ApiOperation({ summary: 'Inscription utilisateur' })
-  @ApiResponse({ status: 201, description: 'Utilisateur inscrit avec succès' })
+  @ApiResponse({ status: 200, description: 'Utilisateur inscrit avec succès' })
   @ApiResponse({ status: 409, description: 'Email déjà existant' })
   async register(@Body() registerDto: RegisterDto) {
     return this.authService.register(registerDto);

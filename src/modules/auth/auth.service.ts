@@ -29,7 +29,7 @@ export class AuthService {
   async login(loginDto: LoginDto) {
     const user = await this.validateUser(loginDto.email, loginDto.motDePasse);
     if (!user) {
-      throw new UnauthorizedException('Identifiants invalides');
+      throw new UnauthorizedException('mot de passe ou email incorrect');
     }
 
     const payload = { 
