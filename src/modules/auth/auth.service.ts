@@ -25,34 +25,35 @@ export class AuthService {
     }
     return null;
   }
+async login(loginDto: LoginDto) {
+  const user = await this.validateUser(loginDto.email, loginDto.motDePasse);
 
-  async login(loginDto: LoginDto) {
-    const user = await this.validateUser(loginDto.email, loginDto.motDePasse);
-    if (!user) {
-      throw new UnauthorizedException('mot de passe ou email incorrect');
-    }
-
-    const payload = { 
-      email: user.email, 
-      sub: user.id, 
-      nom: user.nom, 
-      prenom: user.prenom 
-    };
-    
-    return {
-      access_token: this.jwtService.sign(payload),
-      user: {
-        id: user.id,
-        email: user.email,
-        nom: user.nom,
-        prenom: user.prenom,
-        dateDeNaissance: user.dateDeNaissance,
-        lieuDeNaissance: user.lieuDeNaissance,
-        genre: user.genre,
-        role:user.role,
-      },
-    };
+  if (!user) {
+    throw new UnauthorizedException('mot de passe ou email incorrect');
   }
+
+  const payload = { 
+    email: user.email, 
+    sub: user.id, 
+    nom: user.nom, 
+    prenom: user.prenom,
+    role: user.role, // ✅ AJOUT ICI
+  };
+  
+  return {
+    access_token: this.jwtService.sign(payload),
+    user: {
+      id: user.id,
+      email: user.email,
+      nom: user.nom,
+      prenom: user.prenom,
+      dateDeNaissance: user.dateDeNaissance,
+      lieuDeNaissance: user.lieuDeNaissance,
+      genre: user.genre,
+      role: user.role,
+    },
+  };
+}
 
   async register(registerDto: RegisterDto) {
     try {

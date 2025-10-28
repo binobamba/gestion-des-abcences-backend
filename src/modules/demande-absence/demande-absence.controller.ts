@@ -9,6 +9,7 @@ import { JwtAuthGuard } from '../auth/jwt-auth.guard'; // Import local
 import { DemandeAbsence } from './entities/demande-absence.entity';
 import { User } from '../users/entities/user.entity';
 import { DashboardStatsDto } from './dto/dashboard-stats.dto';
+import { DirectionStatsDto, MonthlyTrendDto } from './dto/direction-stats.dto'
 
 @ApiTags('demandes-absences')
 @Controller('demandes-absences')
@@ -63,7 +64,9 @@ export class DemandeAbsenceController {
     return this.demandeAbsenceService.getDashboardStats(req.user);
   }
 
-  @ApiOperation({ summary: 'Récupérer les demandes récentes pour le dashboard' })
+
+
+     @ApiOperation({ summary: 'Récupérer les demandes récentes pour le dashboard' })
   @ApiResponse({ status: 200, description: 'Liste des demandes récentes' })
   @Get('dashboard/recent-requests')
   getRecentRequests(
@@ -72,4 +75,20 @@ export class DemandeAbsenceController {
   ) {
     return this.demandeAbsenceService.getRecentRequests(req.user, limit);
   }
+
+  @ApiOperation({ summary: 'Récupérer les statistiques pour la direction' })
+  @ApiResponse({ status: 200, description: 'Statistiques direction', type: DirectionStatsDto })
+  @Get('direction/stats')
+  getDirectionStats(@Request() req: { user: User }): Promise<DirectionStatsDto> {
+    return this.demandeAbsenceService.getDirectionStats(req.user);
+  }
+
+  @ApiOperation({ summary: 'Récupérer les tendances mensuelles' })
+  @ApiResponse({ status: 200, description: 'Tendances mensuelles', type: [MonthlyTrendDto] })
+  @Get('direction/trends')
+  getMonthlyTrends(@Request() req: { user: User }): Promise<MonthlyTrendDto[]> {
+    return this.demandeAbsenceService.getMonthlyTrends(req.user);
+  }
+
+
 }

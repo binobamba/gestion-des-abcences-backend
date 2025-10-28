@@ -6,7 +6,25 @@ import { CreateDemandeAbsenceDto } from './dto/create-demande-absence.dto';
 import { UpdateDemandeAbsenceDto } from './dto/update-demande-absence.dto';
 import { User, Role } from '../users/entities/user.entity';
 import { DashboardStatsDto } from './dto/dashboard-stats.dto';
+import { DirectionStatsDto, MonthlyTrendDto } from './dto/direction-stats.dto';
 
+
+interface DirectionStats {
+  totalEmployees: number;
+  avgAbsenceRate: number;
+  approvalRate: number;
+  pendingRequests: number;
+  totalRequests: number;
+  averageDuration: number;
+  mostCommonType: string;
+  productivityRate: number;
+}
+
+interface MonthlyTrend {
+  month: string;
+  requests: number;
+  rate: number;
+}
 
 @Injectable()
 export class DemandeAbsenceService {
@@ -74,7 +92,7 @@ export class DemandeAbsenceService {
     await this.demandeRepository.save(demande);
   }
 
-async getDashboardStats(user: User): Promise<DashboardStatsDto> {
+  async getDashboardStats(user: User): Promise<DashboardStatsDto> {
     // Récupérer toutes les demandes de l'utilisateur
     const userDemandes = await this.demandeRepository.find({
       where: { demandeBy: { id: user.id } },
@@ -172,4 +190,122 @@ async getDashboardStats(user: User): Promise<DashboardStatsDto> {
     return count;
   }
 
+  async getDirectionStats(user: User): Promise<DirectionStatsDto> {
+
+    console.log('\n \n \n=============================================>',user)
+
+    // Vérifier les permissions
+    if (![Role.DIRECTION, Role.RH].includes(user.role)) {
+      throw new ForbiddenException("Accès non autorisé");
+    }
+
+    // Récupérer toutes les demandes
+    const allDemandes = await this.demandeRepository.find({
+      relations: ['demandeBy'],
+    });
+
+    // Récupérer tous les utilisateurs
+    const userRepository = this.demandeRepository.manager.getRepository(User);
+    const allUsers = await userRepository.find();
+    const totalEmployees = allUsers.filter(u => [Role.EMPLOYE, Role.MANAGER].includes(u.role)).length;
+
+    // Calculer les statistiques
+    const totalRequests = allDemandes.length;
+    const approvedRequests = allDemandes.filter(d => d.statut === StatutAbsence.APPROUVE).length;
+    const pendingRequests = allDemandes.filter(d => d.statut === StatutAbsence.EN_ATTENTE).length;
+
+    // Calculer la durée moyenne
+    const totalDuration = allDemandes.reduce((sum, demande) => {
+      return sum + this.calculateWorkingDays(demande.dateDebut, demande.dateFin);
+    }, 0);
+    const averageDuration = totalRequests > 0 ? Math.round(totalDuration / totalRequests) : 0;
+
+    // Type le plus courant
+    const typeCounts: Record<string, number> = allDemandes.reduce((acc, demande) => {
+      acc[demande.type] = (acc[demande.type] || 0) + 1;
+      return acc;
+    }, {} as Record<string, number>);
+    
+    const mostCommonType = Object.keys(typeCounts).reduce((a, b) => 
+      typeCounts[a] > typeCounts[b] ? a : b, 'conge'
+    );
+
+    // Taux d'absence moyen (simplifié)
+    const totalWorkingDaysPerYear = 220; // Jours travaillés moyens par an
+    const totalAbsenceDays = allDemandes
+      .filter(d => d.statut === StatutAbsence.APPROUVE)
+      .reduce((sum, demande) => sum + this.calculateWorkingDays(demande.dateDebut, demande.dateFin), 0);
+    
+    const avgAbsenceRate = totalEmployees > 0 ? 
+      ((totalAbsenceDays / (totalEmployees * totalWorkingDaysPerYear)) * 100) : 0;
+
+    const stats: DirectionStatsDto = {
+      totalEmployees,
+      avgAbsenceRate: parseFloat(avgAbsenceRate.toFixed(1)),
+      approvalRate: approvedRequests,
+      pendingRequests,
+      totalRequests,
+      averageDuration,
+      mostCommonType: this.getTypeLabel(mostCommonType),
+      productivityRate: parseFloat((100 - avgAbsenceRate).toFixed(1))
+    };
+
+    return stats;
+  }
+
+  async getMonthlyTrends(user: User): Promise<MonthlyTrendDto[]> {
+    if (![Role.DIRECTION, Role.RH].includes(user.role)) {
+      throw new ForbiddenException("Accès non autorisé");
+    }
+
+    const allDemandes = await this.demandeRepository.find();
+    
+    // Générer les 6 derniers mois
+    const months: MonthlyTrendDto[] = [];
+    for (let i = 5; i >= 0; i--) {
+      const date = new Date();
+      date.setMonth(date.getMonth() - i);
+      const monthName = date.toLocaleString('fr-FR', { month: 'long' });
+      const year = date.getFullYear();
+      const month = date.getMonth();
+      
+      const monthDemandes = allDemandes.filter(demande => {
+        const demandeDate = new Date(demande.createdAt);
+        return demandeDate.getFullYear() === year && demandeDate.getMonth() === month;
+      });
+
+      const totalWorkingDays = 22; // Jours travaillés moyens par mois
+      const absenceDays = monthDemandes
+        .filter(d => d.statut === StatutAbsence.APPROUVE)
+        .reduce((sum, demande) => sum + this.calculateWorkingDays(demande.dateDebut, demande.dateFin), 0);
+      
+      const absenceRate = totalWorkingDays > 0 ? (absenceDays / totalWorkingDays) * 100 : 0;
+
+      const trend: MonthlyTrendDto = {
+        month: monthName.charAt(0).toUpperCase() + monthName.slice(1),
+        requests: monthDemandes.length,
+        rate: parseFloat(absenceRate.toFixed(1))
+      };
+
+      months.push(trend);
+    }
+
+    return months;
+  }
+
+  private getTypeLabel(type: string): string {
+    const typeLabels: Record<string, string> = {
+      'conge': 'Congé',
+      'permission': 'Permission',
+      'maladie': 'Maladie',
+      'accident_travail': 'Accident travail',
+      'maternite': 'Maternité',
+      'paternite': 'Paternité',
+      'rtt': 'RTT',
+      'formation': 'Formation',
+      'teletravail': 'Télétravail',
+      'autre': 'Autre'
+    };
+    return typeLabels[type] || type;
+  }
 }
