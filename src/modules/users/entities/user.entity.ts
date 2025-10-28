@@ -4,9 +4,13 @@ import {
   Column,
   CreateDateColumn,
   UpdateDateColumn,
+  ManyToOne,
+  OneToMany,
+  JoinColumn,
 } from 'typeorm';
 import { ApiProperty } from '@nestjs/swagger';
 import { Exclude } from 'class-transformer';
+import { Department } from '../../departement/entities/departement.entity';
 
 export enum Genre {
   HOMME = 'homme',
@@ -76,6 +80,15 @@ export class User {
     default: Genre.AUTRE 
   })
   genre: Genre;
+
+  // Relations
+  @ApiProperty({ type: () => Department, description: 'Département de l\'utilisateur', required: false })
+  @ManyToOne(() => Department, (department) => department.employees, { 
+    nullable: true,
+    eager: true 
+  })
+  @JoinColumn({ name: 'department_id' })
+  department: Department;
 
   @ApiProperty({ description: 'Date de création du compte' })
   @CreateDateColumn()

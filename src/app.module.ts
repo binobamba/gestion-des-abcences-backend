@@ -6,6 +6,8 @@ import { typeOrmConfig } from './config/orm.config';
 import { UsersModule } from './modules/users/users.module';
 import { AuthModule } from './modules/auth/auth.module';
 import { DemandeAbsenceModule } from './modules/demande-absence/demande-absence.module';
+import { DepartmentsModule } from './modules/departement/departement.module';
+import { DirectionModule } from './modules/direction/direction.module';
 
 @Module({
   imports: [
@@ -18,6 +20,8 @@ import { DemandeAbsenceModule } from './modules/demande-absence/demande-absence.
     UsersModule,
     AuthModule,
     DemandeAbsenceModule,
+DepartmentsModule,
+    DirectionModule,
   ],
 })
 export class AppModule {}

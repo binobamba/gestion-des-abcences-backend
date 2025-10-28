@@ -49,6 +49,7 @@ export class AuthService {
         dateDeNaissance: user.dateDeNaissance,
         lieuDeNaissance: user.lieuDeNaissance,
         genre: user.genre,
+        role:user.role,
       },
     };
   }
