@@ -5,6 +5,8 @@ import { DemandeAbsence, StatutAbsence } from './entities/demande-absence.entity
 import { CreateDemandeAbsenceDto } from './dto/create-demande-absence.dto';
 import { UpdateDemandeAbsenceDto } from './dto/update-demande-absence.dto';
 import { User, Role } from '../users/entities/user.entity';
+import { DashboardStatsDto } from './dto/dashboard-stats.dto';
+
 
 @Injectable()
 export class DemandeAbsenceService {
@@ -71,4 +73,103 @@ export class DemandeAbsenceService {
     demande.statut = StatutAbsence.ANNULE
     await this.demandeRepository.save(demande);
   }
+
+async getDashboardStats(user: User): Promise<DashboardStatsDto> {
+    // Récupérer toutes les demandes de l'utilisateur
+    const userDemandes = await this.demandeRepository.find({
+      where: { demandeBy: { id: user.id } },
+    });
+
+    // Calculer les statistiques de base
+    const totalRequests = userDemandes.length;
+    const pendingRequests = userDemandes.filter(
+      demande => demande.statut === StatutAbsence.EN_ATTENTE
+    ).length;
+
+    // Calculer les jours de congés (logique métier à adapter selon vos règles)
+    const currentYear = new Date().getFullYear();
+    const yearStart = new Date(currentYear, 0, 1);
+    const yearEnd = new Date(currentYear, 11, 31);
+
+    // Récupérer les demandes approuvées de l'année en cours
+    const approvedDemandes = userDemandes.filter(demande => 
+      (demande.statut === StatutAbsence.APPROUVE || demande.statut === StatutAbsence.EN_ATTENTE) &&
+      demande.dateDebut >= yearStart &&
+      demande.dateFin <= yearEnd
+    );
+
+    // Calculer le nombre total de jours de congés (à adapter selon votre politique)
+    const totalDays = 25; // Exemple: 25 jours par an
+
+    // Calculer les jours utilisés (congés approuvés)
+    let usedDays = 0;
+    approvedDemandes.forEach(demande => {
+      if (demande.statut === StatutAbsence.APPROUVE) {
+        const days = this.calculateWorkingDays(demande.dateDebut, demande.dateFin);
+        usedDays += days;
+      }
+    });
+
+    // Calculer les jours en attente
+    let pendingDays = 0;
+    const pendingDemandes = userDemandes.filter(
+      demande => demande.statut === StatutAbsence.EN_ATTENTE
+    );
+    pendingDemandes.forEach(demande => {
+      const days = this.calculateWorkingDays(demande.dateDebut, demande.dateFin);
+      pendingDays += days;
+    });
+
+    const remainingDays = Math.max(0, totalDays - usedDays);
+
+    // Pour les notifications (à intégrer avec votre système de notifications)
+    const unreadNotifications = 0; // À remplacer par votre logique de notifications
+
+    return {
+      totalDays,
+      usedDays,
+      remainingDays,
+      pendingDays,
+      totalRequests,
+      pendingRequests,
+      unreadNotifications
+    };
+  }
+
+  async getRecentRequests(user: User, limit: number = 5) {
+    const requests = await this.demandeRepository.find({
+      where: { demandeBy: { id: user.id } },
+      order: { createdAt: 'DESC' },
+      take: limit,
+      relations: ['demandeBy', 'ValidateBy'],
+    });
+
+    return requests.map(request => ({
+      id: request.id,
+      type: request.type,
+      startDate: request.dateDebut,
+      endDate: request.dateFin,
+      duration: this.calculateWorkingDays(request.dateDebut, request.dateFin),
+      status: request.statut,
+      motif: request.motif,
+      createdAt: request.createdAt,
+    }));
+  }
+
+  private calculateWorkingDays(startDate: Date, endDate: Date): number {
+    // Implémentation simplifiée - à adapter selon vos règles métier
+    const start = new Date(startDate);
+    const end = new Date(endDate);
+    let count = 0;
+    
+    for (let d = new Date(start); d <= end; d.setDate(d.getDate() + 1)) {
+      const day = d.getDay();
+      if (day !== 0 && day !== 6) { // Exclure samedi et dimanche
+        count++;
+      }
+    }
+    
+    return count;
+  }
+
 }
